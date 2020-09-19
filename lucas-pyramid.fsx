@@ -31,7 +31,7 @@ let check message =
 
     let root= sqrt (float res) 
     ()
-    
+
     if root % 1.000000 = 0.000000 then
         printfn "Perfect Square: %i" message
          
@@ -74,5 +74,3 @@ let myMonitor (mailbox: Actor<_>) =
     loop()
 
 let mon = spawn system "myMon" myMonitor
- 
-
