@@ -1,5 +1,3 @@
-
-
 #time "on"
 #r "nuget: Akka.FSharp" 
 #r "nuget: Akka.TestKit" 
@@ -13,10 +11,24 @@ open System.Diagnostics
 let mutable inc = 0 
 let system = System.create "MySystem" (Configuration.defaultConfig())
 
-
 let bigint (x:int) = bigint(x)
-let n=1000000 
+let n=100000000
 let k=24
+
+let getActorCount number : int= 
+    let mutable res = n 
+    if n < Environment.ProcessorCount then
+        res <-n
+    else
+        res <- Environment.ProcessorCount
+    res
+    
+let numberofCores = getActorCount n
+
+type Message = 
+    | Success of string
+    | Parent of string
+
 
 let check message = 
     let mutable res=0 |> bigint
@@ -33,35 +45,37 @@ let check message =
     ()
 
     if root % 1.000000 = 0.000000 then
-        printfn "Perfect Square: %i" message
+        printfn "%i" message
          
 
 let myActor (mailbox: Actor<_>) = 
-    let rec loop() = 
-        actor {
+    let rec loop() = actor {
         let rand = System.Random()
-        printf "HERE   "
         let! message = mailbox.Receive()
         let sender = mailbox.Sender()
         match message with 
-        | (a,b) -> 
-            for i=a to b do
-                check i
-        inc <- inc + 1
-        sender <! message
+            | (a,b) -> 
+                for i=a to b do
+                    check i
+                sender <! Success "Success"
         return! loop()
-        } 
+    } 
     loop()
-        
+
+
 let myMonitor (mailbox: Actor<_>) =
-    let rec loop()= 
-        actor{
-            printfn "%i" Environment.ProcessorCount
-            let numberofCores = Environment.ProcessorCount
+    let rec loop()= actor{
+        let! msg = mailbox.Receive();
+        match msg with 
+        | Success s -> inc <- inc + 1
+        | Parent m -> 
+            printfn "%i" n
             let actorArray =  [for i in 1 .. (numberofCores+1) do yield spawn system ("myActor" + (string) i) myActor]
+
             let workUnit=n/numberofCores
             let mutable startLimit= 0
             let mutable endLimit = 0
+            
             for i=1 to numberofCores  do
                 startLimit <- ((i-1)*workUnit)+1
                 if i<numberofCores then
@@ -70,7 +84,15 @@ let myMonitor (mailbox: Actor<_>) =
                 else
                     endLimit <- n
                     actorArray.[i] <! (startLimit,endLimit)
-                }
+        return! loop()
+    }            
     loop()
 
+
 let mon = spawn system "myMon" myMonitor
+mon <! Parent "parent" 
+while(inc <> numberofCores) do
+((*do*))
+
+
+
