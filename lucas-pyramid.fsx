@@ -12,8 +12,24 @@ let mutable inc = 0
 let system = System.create "MySystem" (Configuration.defaultConfig())
 
 let bigint (x:int) = bigint(x)
-let n=100000000
-let k=24
+let n= 100000000
+let k=2
+let one = 1 |> bigint
+
+
+
+let isperfectsquare n =
+    let rec binarySearch low high =
+        let divideBy2 = 2 |>bigint
+        
+        let mid = (high + low) / divideBy2
+        let midSquare = mid * mid
+        if low > high then false
+        elif n = midSquare then true
+        else if n < midSquare then binarySearch low (mid - one)
+        else binarySearch (mid + one) high
+
+    binarySearch one n
 
 let getActorCount number : int= 
     let mutable res = n 
@@ -22,7 +38,7 @@ let getActorCount number : int=
     else
         res <- Environment.ProcessorCount
     res
-    
+     
 let numberofCores = getActorCount n
 
 type Message = 
@@ -41,12 +57,32 @@ let check message =
         res <- res+ (i*i)
         i<- i + increment
 
-    let root= sqrt (float res) 
-    ()
-
-    if root % 1.000000 = 0.000000 then
+    let sq = isperfectsquare res
+    if sq then
         printfn "%i" message
-         
+    
+
+
+    (*
+    let mutable q = 1 |> bigint 
+    let divideby2 = 2 |> bigint
+    let res2 = (res/divideby2) 
+    let mutable flag = false
+
+    while (not flag && q < res2 ) do
+        if q*q = res then
+            printfn "%i" message
+            flag <- true
+        q <- q + increment
+    *)
+
+    // let root= sqrt (float res) 
+    // ()
+
+    // if root % 1.000000 = 0.000000 then
+    //     printfn "%i" message
+
+
 
 let myActor (mailbox: Actor<_>) = 
     let rec loop() = actor {
