@@ -10,6 +10,9 @@ open System.Diagnostics
 
 ///////////////////////////Initialization////////////////////////////////////////
 let system = System.create "MySystem" (Configuration.defaultConfig())
+let inputfromcommand = System.Environment.GetCommandLineArgs()
+let n = int inputfromcommand.[3]
+let k = int inputfromcommand.[4]
 let mutable numactors = 0 
 let convertToBigInt (x:int) = bigint(x)
 
@@ -17,8 +20,7 @@ type Message =
     | Success of string
     | BossCommand of string
     
-let n= 100000
-let k=2
+
 
 let one = bigint(1) 
 let divideBy2 = bigint(2)
@@ -30,6 +32,7 @@ let getActorCount (number : int) =
     else
         res <- Environment.ProcessorCount
     res
+    
 let numberofCores = getActorCount n
 let workActor = n/numberofCores
 ///////////////////////////Initialization////////////////////////////////////////
