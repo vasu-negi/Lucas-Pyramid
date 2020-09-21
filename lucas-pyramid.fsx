@@ -36,12 +36,12 @@ let workActor = n/numberofCores
 
 let isPerfectSquare n =
     let rec binarySearch l h = 
-        let mid = (h + l) / divideBy2
-        let midSq = (mid * mid)
-        if l > h then false
-        elif n = midSq then true
-        else if n < midSq then binarySearch l (mid - one)
-        else binarySearch (mid + one) h
+        let midElement = (h + l) / divideBy2
+        let midSq = (midElement * midElement)
+        if n = midSq then true
+        elif l > h then false
+        else if n < midSq then binarySearch l (midElement - one)
+        else binarySearch (midElement + one) h
     binarySearch one n
 
 let squareFunction (sqNumber:int) = 
@@ -54,6 +54,7 @@ let squareFunction (sqNumber:int) =
     while (start<(startindex+bigIntK)) do
         square <- square + (start*start)
         start<- start + inc_step
+
     let sq = isPerfectSquare square
     if sq then printfn "%i" sqNumber
     
@@ -70,7 +71,6 @@ let Worker (mailbox: Actor<_>) =
     } 
     loop()
 
-
 let Boss (mailbox: Actor<_>) =
     let rec loop()= actor{
         let! msg = mailbox.Receive();
@@ -80,7 +80,6 @@ let Boss (mailbox: Actor<_>) =
             let mutable left= 0
             let mutable right = 0
             let actorArray =  [for i in 1 .. (numberofCores+1) do yield spawn system ("Worker" + (string) i) Worker]
-            
             
             for i = 1 to numberofCores  do
                 left <- ((i-1)*workActor)+1 
@@ -94,12 +93,7 @@ let Boss (mailbox: Actor<_>) =
     }            
     loop()
 
-
 let boss = spawn system "Boss" Boss
 boss <! BossCommand "BossCommand" 
-
 while(numactors <> numberofCores) do
 ()
-
-
-
