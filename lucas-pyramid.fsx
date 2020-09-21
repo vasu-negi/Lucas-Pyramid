@@ -2,133 +2,104 @@
 #r "nuget: Akka.FSharp" 
 #r "nuget: Akka.TestKit" 
 
-
 open System
 open Akka.Actor
 open Akka.Configuration
 open Akka.FSharp
 open System.Diagnostics
-let mutable inc = 0 
+
+///////////////////////////Initialization////////////////////////////////////////
 let system = System.create "MySystem" (Configuration.defaultConfig())
-
-let bigint (x:int) = bigint(x)
-let n= 100000000
-let k=2
-let one = 1 |> bigint
-
-
-
-let isperfectsquare n =
-    let rec binarySearch low high =
-        let divideBy2 = 2 |>bigint
-        
-        let mid = (high + low) / divideBy2
-        let midSquare = mid * mid
-        if low > high then false
-        elif n = midSquare then true
-        else if n < midSquare then binarySearch low (mid - one)
-        else binarySearch (mid + one) high
-
-    binarySearch one n
-
-let getActorCount number : int= 
-    let mutable res = n 
-    if n < Environment.ProcessorCount then
-        res <-n
-    else
-        res <- Environment.ProcessorCount
-    res
-     
-let numberofCores = getActorCount n
+let mutable numactors = 0 
+let convertToBigInt (x:int) = bigint(x)
 
 type Message = 
     | Success of string
-    | Parent of string
-
-
-let check message = 
-    let mutable res=0 |> bigint
-    let mutable msg = message |> bigint
-    let mutable k2 = k |> bigint
-    let mutable i=msg
-    let mutable increment = 1 |> bigint
-
-    while (i<(msg+k2)) do
-        res <- res+ (i*i)
-        i<- i + increment
-
-    let sq = isperfectsquare res
-    if sq then
-        printfn "%i" message
+    | BossCommand of string
     
+let n= 100000
+let k=2
 
+let one = bigint(1) 
+let divideBy2 = bigint(2)
 
-    (*
-    let mutable q = 1 |> bigint 
-    let divideby2 = 2 |> bigint
-    let res2 = (res/divideby2) 
-    let mutable flag = false
+let getActorCount (number : int) = 
+    let mutable res = number 
+    if number < Environment.ProcessorCount then
+        res <-number
+    else
+        res <- Environment.ProcessorCount
+    res
+let numberofCores = getActorCount n
+let workActor = n/numberofCores
+///////////////////////////Initialization////////////////////////////////////////
 
-    while (not flag && q < res2 ) do
-        if q*q = res then
-            printfn "%i" message
-            flag <- true
-        q <- q + increment
-    *)
+let isPerfectSquare n =
+    let rec binarySearch l h = 
+        let mid = (h + l) / divideBy2
+        let midSq = (mid * mid)
+        if l > h then false
+        elif n = midSq then true
+        else if n < midSq then binarySearch l (mid - one)
+        else binarySearch (mid + one) h
+    binarySearch one n
 
-    // let root= sqrt (float res) 
-    // ()
-
-    // if root % 1.000000 = 0.000000 then
-    //     printfn "%i" message
-
-
-
-let myActor (mailbox: Actor<_>) = 
+let squareFunction (sqNumber:int) = 
+    let startindex = bigint(sqNumber)
+    let mutable start=startindex
+    let mutable square = bigint(0)
+    let mutable inc_step = bigint(1)
+    let bigIntK = bigint(k)
+     
+    while (start<(startindex+bigIntK)) do
+        square <- square + (start*start)
+        start<- start + inc_step
+    let sq = isPerfectSquare square
+    if sq then printfn "%i" sqNumber
+    
+let Worker (mailbox: Actor<_>) = 
     let rec loop() = actor {
-        let rand = System.Random()
-        let! message = mailbox.Receive()
+        let! recievedCommand = mailbox.Receive()
         let sender = mailbox.Sender()
-        match message with 
+        match recievedCommand with 
             | (a,b) -> 
-                for i=a to b do
-                    check i
+                for x = a to b do
+                    squareFunction x
                 sender <! Success "Success"
         return! loop()
     } 
     loop()
 
 
-let myMonitor (mailbox: Actor<_>) =
+let Boss (mailbox: Actor<_>) =
     let rec loop()= actor{
         let! msg = mailbox.Receive();
         match msg with 
-        | Success s -> inc <- inc + 1
-        | Parent m -> 
-            printfn "%i" n
-            let actorArray =  [for i in 1 .. (numberofCores+1) do yield spawn system ("myActor" + (string) i) myActor]
-
-            let workUnit=n/numberofCores
-            let mutable startLimit= 0
-            let mutable endLimit = 0
+        | Success s -> numactors <- numactors + 1
+        | BossCommand m -> 
+            let mutable left= 0
+            let mutable right = 0
+            let actorArray =  [for i in 1 .. (numberofCores+1) do yield spawn system ("Worker" + (string) i) Worker]
             
-            for i=1 to numberofCores  do
-                startLimit <- ((i-1)*workUnit)+1
-                if i<numberofCores then
-                    endLimit <- i*workUnit
-                    actorArray.[i] <! (startLimit,endLimit)
+            
+            for i = 1 to numberofCores  do
+                left <- ((i-1)*workActor)+1 
+                if i <= numberofCores then
+                    right <- i*workActor
+                    actorArray.[i] <! (left,right)
                 else
-                    endLimit <- n
-                    actorArray.[i] <! (startLimit,endLimit)
+                    right <- n
+                    actorArray.[i] <! (left,right)
         return! loop()
     }            
     loop()
 
 
-let mon = spawn system "myMon" myMonitor
-mon <! Parent "parent" 
-while(inc <> numberofCores) do
-((*do*))
+let boss = spawn system "Boss" Boss
+boss <! BossCommand "BossCommand" 
+
+while(numactors <> numberofCores) do
+()
 
 
 
