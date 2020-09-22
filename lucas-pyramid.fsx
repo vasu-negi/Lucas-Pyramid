@@ -37,7 +37,7 @@ let numberofCores = getActorCount n
 let workActor = n/numberofCores
 ///////////////////////////Initialization////////////////////////////////////////
 
-let isPerfectSquare n =
+let isSquare n =
     let rec binarySearch l h = 
         let midElement = (h + l) / divideBy2
         let midSq = (midElement * midElement)
@@ -58,7 +58,7 @@ let squareFunction (sqNumber:int) =
         square <- square + (start*start)
         start<- start + inc_step
 
-    let sq = isPerfectSquare square
+    let sq = isSquare square
     if sq then printfn "%i" sqNumber
     
 let Worker (mailbox: Actor<_>) = 
@@ -82,6 +82,7 @@ let Boss (mailbox: Actor<_>) =
         | BossCommand m -> 
             let mutable left= 0
             let mutable right = 0
+            
             let actorArray =  [for i in 1 .. (numberofCores+1) do yield spawn system ("Worker" + (string) i) Worker]
             
             for i = 1 to numberofCores  do
