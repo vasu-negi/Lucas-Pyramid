@@ -1,5 +1,6 @@
 # Lucas-Pyramid
 
+
 In order to run app on *nix based/MAC system, follow the instructions below
 
 •   Go to project directory in terminal
